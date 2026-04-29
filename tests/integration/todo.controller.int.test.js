@@ -8,7 +8,7 @@ let firstTodo;
 
 describe(endpointUrl, () => {
     it('POST ' + endpointUrl, async () => {
-        request(app)
+        const response = await request(app)
             .post(endpointUrl)
             .send(newTodo)
         expect((response.statusCode)).toBe(201);
@@ -56,5 +56,12 @@ describe(endpointUrl, () => {
         expect(res.statusCode).toBe(200);
         expect(res.body.title).toBe(testData.title);
         expect(res.body.done).toBe(testData.done);
+    });
+
+    it("DELETE " + endpointUrl, async () => {
+        const res = await request(app)
+            .delete(endpointUrl + newTodoId);
+        expect(res.statusCode).toBe(200);
+        expect(res.body._id).toBe(newTodoId);
     });
 });

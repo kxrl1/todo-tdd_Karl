@@ -8,6 +8,7 @@ TodoModel.create = jest.fn();
 TodoModel.find = jest.fn();
 TodoModel.findById = jest.fn();
 TodoModel.findByIdAndUpdate = jest.fn();
+TodoModel.findByIdAndDelete = jest.fn();
 
 const todoId = "69e5fd60fe88dcdcd6cb5fcd";
 
@@ -34,6 +35,11 @@ describe('TodoController.getTodos', () => {
         expect(res._getJSONData()).toStrictEqual(allTodos);
     });
     it("should handle errors in getTodos", async () => {
+        const errorMessage = { message: "Error finding todos" };
+        const rejectedPromise = Promise.reject(errorMessage);
+        TodoModel.find.mockRejectedValue(rejectedPromise);
+        await TodoController.getTodos(req, res, next);
+        expect(next).toHaveBeenCalledWith(errorMessage);
     }) 
 }); 
 
@@ -56,7 +62,7 @@ describe('TodoController.createTodo', () => {
         expect(res._isEndCalled()).toBeTruthy();
     });
     it('should return json body in response', async () => {
-        awaitTodoModel.create.mockReturnValue(newTodo);
+        TodoModel.create.mockReturnValue(newTodo);
         await TodoController.createTodo(req, res, next);
         expect(res._getJSONData()).toStrictEqual(newTodo);
     });
@@ -91,13 +97,13 @@ describe('TodoController.getTodoById', () => {
     expect(res.statusCode).toBe(404);
     expect(res._isEndCalled()).toBeTruthy();
 });
-});
     it('should handle errors in getTodoById', async () => {
     const errorMessage = { message: "Error finding todo" };
     const rejectedPromise = Promise.reject(errorMessage);
     TodoModel.findById.mockRejectedValue(rejectedPromise);
     await TodoController.getTodoById(req, res, next);
     expect(next).toHaveBeenCalledWith(errorMessage);
+});
 });
 
 describe('TodoController.updateTodo', () => {
@@ -132,4 +138,56 @@ describe('TodoController.updateTodo', () => {
         expect(res.statusCode).toBe(404);
         expect(res._isEndCalled()).toBeTruthy();
     });
-}); 
+});
+
+describe('TodoController.deleteTodo', () => {
+    it('should have a deleteTodo method', () => {
+        expect(typeof TodoController.deleteTodo).toBe('function');
+    });
+    it('should call TodoModel.findByIdAndDelete', async () => {
+
+    req.params.todoid = todoId;
+
+    await TodoController.deleteTodo(req, res, next);
+
+    expect(TodoModel.findByIdAndDelete)
+        .toHaveBeenCalledWith(todoId);
+});
+    it('should return 200 status code and deleted todo', async () => {
+
+    req.params.todoid = todoId;
+
+    TodoModel.findByIdAndDelete.mockReturnValue(newTodo);
+
+    await TodoController.deleteTodo(req, res, next);
+
+    expect(res.statusCode).toBe(200);
+    expect(res._isEndCalled()).toBeTruthy();
+    expect(res._getJSONData()).toStrictEqual(newTodo);
+});
+    it('should return 404 if todo not found', async () => {
+
+    req.params.todoid = todoId;
+
+    TodoModel.findByIdAndDelete.mockReturnValue(null);
+
+    await TodoController.deleteTodo(req, res, next);
+
+    expect(res.statusCode).toBe(404);
+    expect(res._getJSONData()).toStrictEqual({
+        message: "Todo not found"
+    });
+});
+    it('should handle errors in deleteTodo', async () => {
+
+    const errorMessage = { message: "Error deleting todo" };
+
+    TodoModel.findByIdAndDelete.mockRejectedValue(errorMessage);
+
+    req.params.todoid = todoId;
+
+    await TodoController.deleteTodo(req, res, next);
+
+    expect(next).toHaveBeenCalledWith(errorMessage);
+});
+});

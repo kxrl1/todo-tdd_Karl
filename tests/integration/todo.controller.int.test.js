@@ -14,6 +14,7 @@ describe(endpointUrl, () => {
         expect((response.statusCode)).toBe(201);
         expect((response.body.title)).toBe(newTodo.title);
         expect((response.body.done)).toBe(newTodo.done);
+        newTodoId = response.body._id;
     });
 
     it("should return error 500 on malformed data with POST " + endpointUrl, async () => {
@@ -45,5 +46,15 @@ describe(endpointUrl, () => {
         .get(endpointUrl + "69e5fd60fe88dcdcd6cb5fcd");
         expect(response.statusCode).toBe(404);
         expect(response.body).toStrictEqual({ message: "Todo not found" });
+    });
+
+    it("PUT " + endpointUrl, async () => {
+        const testData = { title: "Make integration test", done: true };
+        const res = await request(app)
+            .put(endpointUrl + newTodoId)
+            .send(testData);
+        expect(res.statusCode).toBe(200);
+        expect(res.body.title).toBe(testData.title);
+        expect(res.body.done).toBe(testData.done);
     });
 });

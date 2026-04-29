@@ -7,6 +7,9 @@ const allTodos = require('../mock-data/all-todos.json');
 TodoModel.create = jest.fn();
 TodoModel.find = jest.fn();
 TodoModel.findById = jest.fn();
+TodoModel.findByIdAndUpdate = jest.fn();
+
+const todoId = "69e5fd60fe88dcdcd6cb5fcd";
 
 let req, res, next;
 beforeEach(() => {
@@ -96,3 +99,37 @@ describe('TodoController.getTodoById', () => {
     await TodoController.getTodoById(req, res, next);
     expect(next).toHaveBeenCalledWith(errorMessage);
 });
+
+describe('TodoController.updateTodo', () => {
+    it('should have an updateTodo method', () => {
+        expect(typeof TodoController.updateTodo).toBe('function');
+    });
+    it("should update with TodoModel.findByIdAndUpdate", async () => {
+        req.params.todoid = todoId;
+        req.body = newTodo;
+        await TodoController.updateTodo(req, res, next);
+        expect(TodoModel.findByIdAndUpdate).toHaveBeenCalledWith(todoId, newTodo, { new: true, useFindAndModify: false });
+    });
+    it("should return updated todo with status code 200", async () => {
+        req.params.todoid = todoId;
+        req.body = newTodo;
+        TodoModel.findByIdAndUpdate.mockReturnValue(newTodo);
+        await TodoController.updateTodo(req, res, next);
+        expect(res.statusCode).toBe(200);
+        expect(res._isEndCalled()).toBeTruthy();
+        expect(res._getJSONData()).toStrictEqual(newTodo);
+    });
+    it("should handle errors in updateTodo", async () => {
+        const errorMessage = { message: "Error updating todo" };
+        const rejectedPromise = Promise.reject(errorMessage);
+        TodoModel.findByIdAndUpdate.mockRejectedValue(rejectedPromise);
+        await TodoController.updateTodo(req, res, next);
+        expect(next).toHaveBeenCalledWith(errorMessage);
+    });
+    it("should return 404 if todo to update is not found", async () => {
+        TodoModel.findByIdAndUpdate.mockReturnValue(null);
+        await TodoController.updateTodo(req, res, next);
+        expect(res.statusCode).toBe(404);
+        expect(res._isEndCalled()).toBeTruthy();
+    });
+}); 
